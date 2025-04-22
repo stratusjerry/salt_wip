@@ -9,12 +9,18 @@ Short list of modules not working via `salt-ssh` on `RHEL 8`
 | Salt Version | Module | Error | Code | Github Issue |
 |-             |-       |-      |-     |-             |
 | `3006.9`     | yumpkg |       | https://github.com/saltstack/salt/blob/v3006.9/salt/modules/yumpkg.py#L1427 | https://github.com/saltstack/salt/issues/67091 |
-
+| `3006.10`    | `pkg.list_upgrades` triggers but file is `salt/utils/systemd.py` | `Passed invalid arguments: __init__() got an unexpected keyword argument 'capture_output'` | https://github.com/saltstack/salt/blob/v3006.10/salt/utils/systemd.py#L96 | |
 
 ### Solution: Cherry-Pick/Backport `relenv` into `3006.x` branch
 TODO: Document Attempt
 
 ## Setup a `salt-ssh` test environment
+
+<details>
+<summary>Docker Attempt</summary>
+
+> Note: RockyLinux 8 container below system Python 3.6 path is `/usr/libexec/platform-python`, we need to investigate how to change this to accurately test what a RHEL 8 VM would run
+
 ```bash
 docker run -it rockylinux:8.9 /bin/bash
 #Set our base directory
@@ -54,7 +60,15 @@ mytest:
 EOF
 # Test salt-ssh minion connectivity
 ${basedir}/bin/salt-ssh --ignore-host-keys --verbose --roster-file=${basedir}/salt/roster "mytest" --ssh-option="StrictHostKeyChecking=no" test.ping
-
+${basedir}/bin/salt-ssh --ignore-host-keys --verbose --roster-file=${basedir}/salt/roster "mytest" --ssh-option="StrictHostKeyChecking=no" pkg.list_pkgs
+# TODO: investigate why below is NOT failing, possibly 
+#   because salt-ssh python version used and not system?
+${basedir}/bin/salt-ssh --ignore-host-keys --verbose --roster-file=${basedir}/salt/roster "mytest" --ssh-option="StrictHostKeyChecking=no" pkg.list_upgrades
+# 
+${basedir}/bin/salt-ssh --ignore-host-keys --verbose --log-level=debug --python3-bin=/usr/libexec/platform-python --roster-file=${basedir}/salt/roster "mytest" --ssh-option="StrictHostKeyChecking=no" pkg.list_upgrades
+# strace shows the salt-call invocation
+#SALT_ARGV: ['/usr/libexec/platform-python', '/var/tmp/.root_19b0c1_salt/salt-call', '--retcode-passthrough', '--local', '--metadata', '--out', 'json', '-l', 'quiet', '-c', '/var/tmp/.root_19b0c1_salt', '--', 'pkg.list_upgrades']
+/usr/libexec/platform-python /var/tmp/.root_19b0c1_salt/salt-call --retcode-passthrough --local --metadata --out json -l quiet -c /var/tmp/.root_19b0c1_salt -- pkg.list_upgrades
 ```
 
 Some convenience/debug commands
@@ -62,8 +76,11 @@ Some convenience/debug commands
 alias ll='ls -lh'
 # Cleanup salt-ssh directory
 rm -rf /var/tmp/.root_*salt
+# Test salt-ssh monkeypatches in /var/tmp and manually invoke via 'salt-call'
+/usr/bin/python3 '/var/tmp/.root_19b0c1_salt/salt-call' --help
 ```
 
+</details>
 
 ### Other Documentation
 [salt-ssh-flags](./salt-ssh-flags.md)
