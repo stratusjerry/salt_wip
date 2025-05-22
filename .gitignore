@@ -1,0 +1,8 @@
+*.gz
+output/
+!output/extract.sh
+!output/fdupes.sh
+!output/index.txt
+
+.vscode/
+.idea/
