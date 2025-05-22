@@ -8,7 +8,9 @@ dnf install -y fdupes
 
 # Below not work, app dir mount issue?
 fdupes -r /app/
-# 39,411 files
+# 
+fdupes --recurse --size /app/ > dedupe_report.txt
+# 44,085 files
 
 # Deduplicate recursively, delete duplicates, keep first copy (non-interactive)
 #fdupes -rdN /app/
