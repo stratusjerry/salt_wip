@@ -37,6 +37,7 @@ echo "$dirs" | while IFS= read -r dir; do
     echo "Processing $dir"
     cd $dir
     tar -xvzf vscode-server-linux-x64.tar.gz --strip-components 1
+    #rm -f vscode-server-linux-x64.tar.gz
     cd ..
   fi
 done
